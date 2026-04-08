@@ -1,0 +1,5 @@
+requests
+pandas
+pytrends
+python-dotenv
+beautifulsoup4
