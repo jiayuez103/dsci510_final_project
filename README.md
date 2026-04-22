@@ -56,7 +56,7 @@ Install all required packages:
 pip install -r requirements.txt
 ```
 
-Required packages include: `requests`, `pandas`, `pytrends`, `python-dotenv`, `beautifulsoup4`
+Required packages include: `requests`, `pandas`, `pytrends`, `python-dotenv`, `scikit-learn`, `matplotlib`, `seaborn`, `numpy`, `joblib`
 
 # Running analysis 
 _update these instructions_
