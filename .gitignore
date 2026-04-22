@@ -208,7 +208,15 @@ __marimo__/
 
 # Project data and results
 data/
-results/
+results/*.csv
+results/*.pkl
 src/.env
 
 .DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

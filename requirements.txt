@@ -2,4 +2,8 @@ requests
 pandas
 pytrends
 python-dotenv
-beautifulsoup4
+scikit-learn
+matplotlib
+seaborn
+numpy
+joblib
