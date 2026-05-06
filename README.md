@@ -41,7 +41,7 @@ Skaneateles pricing is driven by seasonality (month as top feature), while Canan
 - Skaneateles average nightly prices are consistently ~$130–$140 higher than Canandaigua across all months
 - Skaneateles November and December are the most expensive months (~$420–$422)
 - Canandaigua prices are nearly flat across all five months (~$278–$290)
-- Prices increased ~48% from 2023-2024 (~$300) to 2024-2025 (~$450) in Skaneateles, confirming year as a strong pricing signal
+- Prices increased approximately 48% from 2023-2024 ($300) to 2024-2025 ($450) in Skaneateles, confirming year as a strong pricing signal
 
 ## Feature Analysis
 Temperature, Dickens Christmas trend, and Syracuse Basketball trend show no clear linear effect on price when examined individually. Their importance in the model reflects interaction effects with month and year, not direct causal relationships.
