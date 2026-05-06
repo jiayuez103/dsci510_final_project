@@ -1,27 +1,21 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, r2_score
-from config import FEATURE_COLS, RESULTS_DIR, PLOT_SIZE
+from config import FEATURE_COLS
 
 TARGET = "price_usd"
 
 def get_feature_importance(merged_df, listing_id, feature_cols=FEATURE_COLS):
-    """
-    Use Random Forest to identify the most important features
-    for predicting price changes in a single listing.
-    """
-    print(f"\nFeature Importance (Random Forest): {listing_id}")
+    print(f"\nFeature Importance (Random Forest) for {listing_id}")
 
     listing_df = merged_df[merged_df["airbnb_id"] == listing_id].copy()
     available_features = [f for f in feature_cols if f in listing_df.columns]
     listing_df = listing_df[available_features + [TARGET]].dropna()
 
     if listing_df[TARGET].std() == 0:
-        print("Price is constant - skipping")
+        print("Price is constant - skipped")
         return None
 
     # 1. Prepare data
@@ -45,7 +39,7 @@ def get_feature_importance(merged_df, listing_id, feature_cols=FEATURE_COLS):
     r2 = r2_score(y_test, predictions)
 
     if r2 < -1:
-        print(f"R2 too negative ({r2:.3f}) - skipping")
+        print(f"R2 too negative ({r2:.3f}) - skipped")
         return None
 
     print(f"MAE: ${mae:.2f}")
@@ -68,11 +62,8 @@ def get_feature_importance(merged_df, listing_id, feature_cols=FEATURE_COLS):
     }
 
 def run_single_listing_model(merged_df, listing_id):
-    """
-    Run Linear Regression on a single Airbnb listing to test
-    whether weather and calendar features can predict price changes.
-    """
-    print(f"\n--- Single Listing Model: {listing_id} ---")
+    # Linear regression on a single Airbnb listing
+    print(f"\nSingle Listing Model for {listing_id} ")
 
     listing_df = merged_df[merged_df["airbnb_id"] == listing_id].copy()
 
@@ -80,7 +71,7 @@ def run_single_listing_model(merged_df, listing_id):
     listing_df = listing_df[available_features + [TARGET]].dropna()
 
     if listing_df[TARGET].std() == 0:
-        print("Price is constant - skipping")
+        print("Price is constant - skipped")
         return None
 
     # 1. Prepare data
@@ -110,7 +101,6 @@ def run_single_listing_model(merged_df, listing_id):
     return {"listing_id": listing_id, "mae": mae, "r2": r2}
 
 def normalize_prices(merged_df):
-    """Normalize price relative to each listing's average"""
     merged_df = merged_df.copy()
     avg_prices = merged_df.groupby("airbnb_id")["price_usd"].transform("mean")
     merged_df["price_normalized"] = merged_df["price_usd"] / avg_prices
@@ -118,7 +108,7 @@ def normalize_prices(merged_df):
 
 
 def run_full_model(merged_df, feature_cols=FEATURE_COLS):
-    print("\n=== Full Model (Normalized Prices) ===")
+    print("\nFull model with normalized prices:")
 
     df = normalize_prices(merged_df)
 

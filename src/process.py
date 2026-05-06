@@ -1,5 +1,5 @@
 import pandas as pd
-from config import WINTER_HOLIDAYS, PLOT_SIZE
+from config import WINTER_HOLIDAYS
 
 
 def process_weather_data(weather_df):

@@ -2,25 +2,75 @@ import os
 import argparse
 import joblib
 import pandas as pd
+import time
 from config import DATA_DIR, RESULTS_DIR, FEATURE_COLS, FEATURE_COLS_CANANDAIGUA
+from load import get_weather_data, get_trends_data, get_airbnb_data
+from config import (
+    SKANEATELES_LAT, SKANEATELES_LON, SKANEATELES_ALT, SKANEATELES_ZIP,
+    CANANDAIGUA_LAT, CANANDAIGUA_LON, CANANDAIGUA_ALT, CANANDAIGUA_ZIP,
+    TRENDS_KEYWORDS, TRENDS_KEYWORDS_CANANDAIGUA
+    )
 from process import merge_all
 from analyze import get_feature_importance, run_full_model, normalize_prices
 from sklearn.metrics import mean_absolute_error, r2_score
 
 
-def train():
+def train(data_link_skaneateles=None, data_link_canandaigua=None):
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
+    if data_link_skaneateles and data_link_canandaigua:
+        import urllib.request
+        print("Downloading pre-collected data from Google Drive")
+        urllib.request.urlretrieve(data_link_skaneateles, f"{DATA_DIR}/merged_skaneateles.csv")
+        urllib.request.urlretrieve(data_link_canandaigua, f"{DATA_DIR}/merged_canandaigua.csv")
+        print("Data downloaded successfully!")
+
+    else:
+        print("\nCollecting Skaneateles data from original sources")
+        weather_df = get_weather_data(SKANEATELES_LAT, SKANEATELES_LON, SKANEATELES_ALT)
+        weather_df.to_csv(f"{DATA_DIR}/weather.csv", index=False)
+
+        trends_df = get_trends_data(keywords=TRENDS_KEYWORDS)
+        trends_df.to_csv(f"{DATA_DIR}/trends.csv", index=False)
+
+        all_dfs = []
+        for offset in [0, 50, 100]:
+            print(f"\nFetching Skaneateles listings offset={offset}")
+            df = get_airbnb_data(zipcode=SKANEATELES_ZIP, offset=offset, max_listings=50)
+            if df is not None and len(df) > 0:
+                all_dfs.append(df)
+            time.sleep(2)  # AI generated: avoid rate limiting
+
+        airbnb_df = pd.concat(all_dfs, ignore_index=True)
+        airbnb_df.to_csv(f"{DATA_DIR}/airbnb.csv", index=False)
+
+        print("\nCollecting Canandaigua data from original sources")
+        weather_canandaigua_df = get_weather_data(CANANDAIGUA_LAT, CANANDAIGUA_LON, CANANDAIGUA_ALT)
+        weather_canandaigua_df.to_csv(f"{DATA_DIR}/weather_canandaigua.csv", index=False)
+
+        trends_canandaigua_df = get_trends_data(keywords=TRENDS_KEYWORDS_CANANDAIGUA)
+        trends_canandaigua_df.to_csv(f"{DATA_DIR}/trends_canandaigua.csv", index=False)
+
+        all_dfs = []
+        for offset in [0, 50, 100, 150, 200, 250]:
+            df = get_airbnb_data(zipcode=CANANDAIGUA_ZIP, offset=offset, max_listings=50)
+            if df is not None and len(df) > 0:
+                all_dfs.append(df)
+            time.sleep(2)
+        airbnb_canandaigua_df = pd.concat(all_dfs, ignore_index=True)
+        airbnb_canandaigua_df.to_csv(f"{DATA_DIR}/airbnb_canandaigua.csv", index=False)
+
+        merged_df = merge_all(weather_df, trends_df, airbnb_df)
+        merged_df.to_csv(f"{DATA_DIR}/merged_skaneateles.csv", index=False)
+
+        merged_canandaigua_df = merge_all(weather_canandaigua_df, trends_canandaigua_df, airbnb_canandaigua_df)
+        merged_canandaigua_df.to_csv(f"{DATA_DIR}/merged_canandaigua.csv", index=False)
+
     # Skaneateles Lake
     print("\nTraining Model for Skaneateles Lake listings")
-    weather_df = pd.read_csv(f"{DATA_DIR}/weather.csv")
-    trends_df = pd.read_csv(f"{DATA_DIR}/trends.csv")
-    airbnb_df = pd.read_csv(f"{DATA_DIR}/airbnb.csv")
-
-    merged_df = merge_all(weather_df, trends_df, airbnb_df)
-    merged_df.to_csv(f"{DATA_DIR}/merged_skaneateles.csv", index=False)
-    print(f"Merged: {len(merged_df)} records")
+    merged_df = pd.read_csv(f"{DATA_DIR}/merged_skaneateles.csv")
+    print(f"Merged {len(merged_df)} records")
 
     #single listing
     rf_results = []
@@ -40,14 +90,9 @@ def train():
     joblib.dump(rf_model_sk, f"{RESULTS_DIR}/rf_model_skaneateles.pkl")
 
     # Canandaigua Lake
-    print("\n Training Model for Canandaigua Lake listings")
-    weather_canandaigua_df = pd.read_csv(f"{DATA_DIR}/weather_canandaigua.csv")
-    trends_canandaigua_df = pd.read_csv(f"{DATA_DIR}/trends_canandaigua.csv")
-    airbnb_canandaigua_df = pd.read_csv(f"{DATA_DIR}/airbnb_canandaigua.csv")
-
-    merged_canandaigua_df = merge_all(weather_canandaigua_df, trends_canandaigua_df, airbnb_canandaigua_df)
-    merged_canandaigua_df.to_csv(f"{DATA_DIR}/merged_canandaigua.csv", index=False)
-    print(f"Merged: {len(merged_canandaigua_df)} records")
+    print("\nTraining Model for Canandaigua Lake listings")
+    merged_canandaigua_df = pd.read_csv(f"{DATA_DIR}/merged_canandaigua.csv")
+    print(f"Merged {len(merged_canandaigua_df)} records")
 
     #single listing
     rf_results_canandaigua = []
@@ -66,7 +111,7 @@ def train():
     importance_ca.to_csv(f"{RESULTS_DIR}/full_model_importance_canandaigua.csv", index=False)
     joblib.dump(rf_model_ca, f"{RESULTS_DIR}/rf_model_canandaigua.pkl")
 
-    print("\nDone.")
+    print("\nModel Training Done.")
 
 
 def evaluate(model_link=None, feature_cols=FEATURE_COLS, region="skaneateles"):
@@ -120,11 +165,16 @@ if __name__ == "__main__":
     parser.add_argument("--evaluation", action="store_true")
     parser.add_argument("--model_link", type=str, default=None)
     parser.add_argument("--region", type=str, default="skaneateles")
+    parser.add_argument("--data_link_skaneateles", type=str, default=None)
+    parser.add_argument("--data_link_canandaigua", type=str, default=None)
 
     args = parser.parse_args()
 
     if args.train:
-        train()
+        train(
+            data_link_skaneateles=args.data_link_skaneateles,
+            data_link_canandaigua=args.data_link_canandaigua
+        )
     elif args.evaluation:
         if args.region == "canandaigua":
             evaluate(model_link=args.model_link, region=args.region,

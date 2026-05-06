@@ -21,7 +21,7 @@ def get_weather_data(lat, lon, alt):
 
     all_weather_data = []
     for start_str, end_str in WINTER_SEASONS:
-        print(f"Fetching weather data from {start_str} to {end_str}...")
+        print(f"Fetching weather data from {start_str} to {end_str}:")
         parameters = {
             "lat": lat,
             "lon": lon,
@@ -46,7 +46,7 @@ def get_trends_data(keywords=TRENDS_KEYWORDS):
         timeframe = f'{start_str} {end_str}'
 
         for keyword in keywords:
-            print(f"Fetching '{keyword}' data from {start_str} to {end_str}...")
+            print(f"Fetching '{keyword}' data from {start_str} to {end_str}:")
 
             pytrends.build_payload([keyword], timeframe=timeframe, geo=TRENDS_GEO)
             trend_df = pytrends.interest_over_time()
@@ -59,7 +59,7 @@ def get_trends_data(keywords=TRENDS_KEYWORDS):
             trend_df = trend_df.rename(columns={keyword: "interest"})
             trend_df["keyword"] = keyword
             all_trend_data.append(trend_df)
-            time.sleep(1) # AI generated:avoid rate limiting
+            time.sleep(1) # AI generated: avoid rate limiting
 
     if not all_trend_data:
         print("No trends data collected.")
@@ -71,7 +71,7 @@ def get_trends_data(keywords=TRENDS_KEYWORDS):
     return combined_trends
 
 def get_total_listings(zipcode):
-    print(f"Testing total listings for zipcode {zipcode}...")
+    print(f"Testing total listings for zipcode {zipcode}:")
 
     headers = {
         "x-rapidapi-host": "airbnb-listings.p.rapidapi.com",
@@ -87,12 +87,12 @@ def get_total_listings(zipcode):
         )
         results = response.json().get("results", [])
         count = len(results)
-        print(f"  Offset {offset}: {count} listings")
+        print(f" Offset {offset}: {count} listings")
         total += count
         time.sleep(0.5)
 
         if count < 50:
-            print(f"  Last page reached at offset {offset}")
+            print(f" Last page reached at offset {offset}")
             break
 
     print(f"Total listings found: {total}")
@@ -124,28 +124,28 @@ def get_airbnb_data(zipcode=SKANEATELES_ZIP, max_listings=50, offset=0, country=
                 AIRBNB_LISTING_DETAILS_URL,
                 headers=headers,
                 params={"id": listing_id},
-                timeout=20
+                timeout=20 # AI generated: avoid hanging on slow API responses
             ).json()
             detail = details_data.get("results", [{}])[0]
         except Exception as e:
-            print(f"  Skipping listing {listing_id} details: {e}")
+            print(f"Skipping listing {listing_id} details: {e}")
             continue
 
         prices_list = []
         for year, month in AIRBNB_WINTER_MONTHS:
-            print(f"Fetching prices for listing {listing_id} - {year}/{month}...")
+            print(f"Fetching prices for listing {listing_id} - {year}/{month}")
             try:
                 prices_data = requests.get(
                     AIRBNB_LISTING_PRICES_URL,
                     headers=headers,
                     params={"id": listing_id, "year": year, "month": month},
-                    timeout=20
+                    timeout=20 # AI generated: avoid hanging on slow API responses
                 ).json()
                 prices_list += prices_data.get("results", [])
             except Exception as e:
-                print(f"  Skipping {listing_id} - {year}/{month}: {e}")
+                print(f"Skipping {listing_id} - {year}/{month}: {e}")
                 continue
-            time.sleep(0.5)
+            time.sleep(0.5) # AI generated: avoid rate limiting
 
         for price_entry in prices_list:
             all_listings.append({
@@ -167,7 +167,7 @@ def get_airbnb_data(zipcode=SKANEATELES_ZIP, max_listings=50, offset=0, country=
 
 
 if __name__ == "__main__":
-    RUN_REGION = "canandaigua"
+    RUN_REGION = "skaneateles" # or canandaigua
 
     if RUN_REGION == "skaneateles":
         weather_df = get_weather_data(SKANEATELES_LAT, SKANEATELES_LON, SKANEATELES_ALT)
@@ -182,7 +182,8 @@ if __name__ == "__main__":
             df = get_airbnb_data(zipcode=SKANEATELES_ZIP, offset=offset, max_listings=50)
             if df is not None and len(df) > 0:
                 all_dfs.append(df)
-            time.sleep(2)
+            time.sleep(2) # AI generated: avoid rate limiting
+
         airbnb_df = pd.concat(all_dfs, ignore_index=True)
         airbnb_df.to_csv("../data/airbnb.csv", index=False)
         print(f"Total saved: {len(airbnb_df)} records")
@@ -190,37 +191,26 @@ if __name__ == "__main__":
 
 
     elif RUN_REGION == "canandaigua":
-        headers = {
-            "x-rapidapi-host": "airbnb-listings.p.rapidapi.com",
-            "x-rapidapi-key": RAPIDAPI_KEY
-        }
-        test = requests.get(
-            AIRBNB_LISTING_PRICES_URL,
-            headers=headers,
-            params={"id": 650212222409106646, "year": 2022, "month": 11}
-        ).json()
-        print(test)
         # total = get_total_listings(zipcode=CANANDAIGUA_ZIP)
-        # weather_canandaigua_df = get_weather_data(CANANDAIGUA_LAT, CANANDAIGUA_LON, CANANDAIGUA_ALT)
-        # weather_canandaigua_df.to_csv("../data/weather_canandaigua.csv", index=False)
+        weather_canandaigua_df = get_weather_data(CANANDAIGUA_LAT, CANANDAIGUA_LON, CANANDAIGUA_ALT)
+        weather_canandaigua_df.to_csv("../data/weather_canandaigua.csv", index=False)
 
-        #trends_canandaigua_df = get_trends_data(keywords=TRENDS_KEYWORDS_CANANDAIGUA)
-        #trends_canandaigua_df.to_csv("../data/trends_canandaigua.csv", index=False)
-        #print(trends_canandaigua_df.groupby("keyword")["interest"].describe())
+        trends_canandaigua_df = get_trends_data(keywords=TRENDS_KEYWORDS_CANANDAIGUA)
+        trends_canandaigua_df.to_csv("../data/trends_canandaigua.csv", index=False)
 
-        # all_dfs = []
-        # for offset in [0, 50, 100, 150, 200, 250]:
-        #     print(f"\nFetching Canandaigua listings offset={offset}")
-        #     df = get_airbnb_data(zipcode=CANANDAIGUA_ZIP, offset=offset, max_listings=50)
-        #     if df is not None and len(df) > 0:
-        #         all_dfs.append(df)
-        #         temp_df = pd.concat(all_dfs, ignore_index=True)
-        #         temp_df.to_csv("../data/airbnb_canandaigua.csv", index=False)
-        #         print(f"Saved so far: {len(temp_df)} records")
-        #     time.sleep(2)
+        all_dfs = []
+        for offset in [0, 50, 100, 150, 200, 250]:
+            print(f"\nFetching Canandaigua listings offset={offset}")
+            df = get_airbnb_data(zipcode=CANANDAIGUA_ZIP, offset=offset, max_listings=50)
+            if df is not None and len(df) > 0:
+                 all_dfs.append(df)
+                 temp_df = pd.concat(all_dfs, ignore_index=True)
+                 temp_df.to_csv("../data/airbnb_canandaigua.csv", index=False)
+                 print(f"Saved so far: {len(temp_df)} records")
+            time.sleep(2) # AI generated: avoid rate limiting
 
-        #airbnb_canandaigua_df = pd.concat(all_dfs, ignore_index=True)
-        #airbnb_canandaigua_df.to_csv("../data/airbnb_canandaigua.csv", index=False)
-        #print(f"Total saved: {len(airbnb_canandaigua_df)} records")
-        #print(f"Total listings: {airbnb_canandaigua_df['airbnb_id'].nunique()}")
+        airbnb_canandaigua_df = pd.concat(all_dfs, ignore_index=True)
+        airbnb_canandaigua_df.to_csv("../data/airbnb_canandaigua.csv", index=False)
+        print(f"Total saved: {len(airbnb_canandaigua_df)} records")
+        print(f"Total listings: {airbnb_canandaigua_df['airbnb_id'].nunique()}")
 
