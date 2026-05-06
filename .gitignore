@@ -208,7 +208,6 @@ __marimo__/
 
 # Project data and results
 data/*
-!data/.gitkeep
 results/*.csv
 results/*.pkl
 src/.env
